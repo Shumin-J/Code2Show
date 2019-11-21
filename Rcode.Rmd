@@ -1,0 +1,122 @@
+---
+title: "backshift"
+author: "Shumin-J"
+date: "2019/11/20"
+output: html_document
+---
+
+
+```{r}
+coin_data.ada=read.csv('ADA_data.csv')
+coin_data.atom=read.csv('ATOM_data.csv')
+coin_data.bch=read.csv('BCH_data.csv')
+coin_data.bnb=read.csv('BNB_data.csv')
+coin_data.bsv=read.csv('BSV_data.csv')
+prime_data=read.csv('BTC_data.csv')
+coin_data.eos=read.csv('EOS_data.csv')
+coin_data.eth=read.csv('ETH_data.csv')
+coin_data.ht=read.csv('HT_data.csv')
+coin_data.leo=read.csv('LEO_data.csv')
+coin_data.link=read.csv('LINK_data.csv')
+coin_data.ltc=read.csv('LTC_data.csv')
+coin_data.miota=read.csv('MIOTA_data.csv')
+coin_data.neo=read.csv('NEO_data.csv')
+coin_data.trx=read.csv('TRX_data.csv')
+coin_data.usdt=read.csv('USDT_data.csv')
+coin_data.xlm=read.csv('XLM_data.csv')
+coin_data.xmr=read.csv('XMR_data.csv')
+coin_data.xrp=read.csv('XRP_data.csv')
+coin_data.xtz=read.csv('XTZ_data.csv')
+
+```
+
+```{r}
+btc_price=prime_data$price[5200:5263]
+library(astsa)
+library(forecast)
+plot(btc_price,type='l')
+model1=sarima(btc_price,p=3,d=1,q=0)
+pacf(model1$fit$residuals[1:60])
+sarima.for(btc_price[1:60],n.ahead = 3,p=2,d=1,q=0)
+lines(61:63,btc_price[61:63])
+auto.arima(btc_price[1:60])
+```
+
+
+```{r}
+btc_price=prime_data$price
+plot(btc_price,type='l')
+library(astsa)
+library(forecast)
+model1=sarima(btc_price,p=4,d=1,q=3,D=0,S=148,Q=1,P=0)
+```
+
+
+
+```{r}
+acf2(model1$fit$residuals,max.lag = 400)
+
+
+```
+
+```{r}
+total_test_data=prime_data$price
+#begin_data=total_test_data[80:5460]
+start=1000000
+sarima.noplot <- function(dataset,n.ahead,p,d,q,S,P,D,Q ){
+     png(temp <- tempfile())
+     output <- sarima.for(dataset,n.ahead=n.ahead,p=p,d=d,q=q,S=S,P=P,D=D,Q=Q)
+     dev.off()
+     file.remove(temp)
+     return(output)
+}
+bit_num=0
+total_asset=c()
+
+for (i in 1:5300){
+  train=window(total_test_data,start=i,end=i+60-1)
+  model=arima(train,order=c(3,1,0), seasonal=list(order=c(0,0,0),period=NA), 
+         method="ML")
+  model_pred=forecast(model,h=2)
+  pred_value=model_pred$mean
+  if(pred_value[1]<train[length(train)] & pred_value[2]<train[length(train)] ){
+    
+    start=start+bit_num*train[length(train)]
+    bit_num=0
+  }
+  else {
+    if(pred_value[1]>train[length(train)] & pred_value[2]>train[length(train)] ){
+       
+       bit_num=bit_num+start/train[length(train)]
+       start=0
+    }
+    
+    else{
+          if(pred_value[1]>train[length(train)] & pred_value[2]<train[length(train)] ){
+       
+       bit_num=bit_num+start/train[length(train)]*0.5
+       start=start/2
+          }
+      else{
+            
+          start=start+bit_num*train[length(train)]*0.5
+          bit_num=bit_num/2
+      }
+    }
+  }
+  total_asset<-append(total_asset,start+bit_num*train[length(train)])
+  
+  
+}
+plot(total_asset,type='l',main='Strategy3')
+
+
+
+
+
+```
+
+
+```{r}
+plot(total_test_data)
+```
